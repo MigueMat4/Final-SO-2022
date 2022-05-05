@@ -4,12 +4,18 @@
  */
 package main;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JTextArea;
+
 /**
  *
  * @author mfmatul
  */
 public class frmMain extends javax.swing.JFrame {
     
+    int cont=0;
+    String contenido="";
     static final int N = 5; // Tamaño del buzón
     String buzon[] = new String[N]; // Buzón para mensajes
     private int contadorEmisores = 1;
@@ -34,8 +40,11 @@ public class frmMain extends javax.swing.JFrame {
         "Hola, cómo están? Todo bien? Todo correcto?",
         "Ya no sé que más escribir xd",
         "Todos saben que la mayoría de estudiantes copia en la modalida virtual"};
-    private final Emisor emisor = new Emisor();
-    private final Mensajero mensajero = new Mensajero();
+    Monitor obj = new Monitor();
+    private final Emisor emisor = new Emisor(obj);
+    private final Mensajero mensajero = new Mensajero(obj);
+    String[]enviados=new String [5];
+    int cont2=0;
 
     /**
      * Creates new form frmMain
@@ -49,10 +58,76 @@ public class frmMain extends javax.swing.JFrame {
             buzon[i] = "";
     }
     
+    class Monitor{
+        
+        
+        synchronized void mensaje(int opcion, String mensaje, String mensajeAEnviar){
+
+                switch(opcion){
+                    case 1:
+                        while(cont<5){
+                            int random = (int) (Math.random()*19)+1;
+                            mensaje=mensajes[random];
+                            buzon[cont]=cont+1+". "+ mensaje;
+                            actualizarBuzon();
+                            cont+=1;
+                            int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+                            try {
+                                Thread.sleep(velocidad);
+                            } catch (InterruptedException ex) {
+                                Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                            }                             
+
+                        }
+                    case 2:
+                            if (cont!=0){
+                                while(cont2<5){
+                                    mensajeAEnviar=buzon[cont2];
+                                    mensajeAEnviar=mensajeAEnviar+"--Mensaje enviado";
+                                    buzon[cont2]=mensajeAEnviar;
+                                    actualizarBuzon();
+                                    cont2+=1;
+                                    int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+                                    try {
+                                        Thread.sleep(velocidad);
+                                    } catch (InterruptedException ex) {
+                                        Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                                    }
+                                    
+                                }
+                                  
+                            }
+                        
+                }
+        }
+    }
+    
     public class Emisor extends Thread {
         
-        public String mensaje = "";
-        
+        public String mensaje;
+        Monitor m;
+        public Emisor(Monitor m) {
+            this.mensaje="";
+            this.m=m;
+        }
+ 
+        @Override
+        public void run(){
+            m.mensaje(1, mensaje, "");
+//            while(cont<5){
+//            int random = (int) (Math.random()*19)+1;
+//            mensaje=mensajes[random];
+//            buzon[cont]=cont+1+". "+ mensaje;
+//                actualizarBuzon();
+//                cont+=1;
+//                int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+//                try {
+//                    Thread.sleep(velocidad);
+//                } catch (InterruptedException ex) {
+//                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+//                } 
+//        }
+        }
         // Debe buscar un mensaje aleatorio (0-19)
         // Si hay espacio en el buzón, debe colocar el mensaje en el text area
         // Ojo que el text area debe indicar el orden de prioridad en base a las líneas
@@ -62,7 +137,31 @@ public class frmMain extends javax.swing.JFrame {
     
     public class Mensajero extends Thread {
         
-        public String mensajeAEnviar = "";
+        public String mensajeAEnviar;
+        Monitor m;
+        
+        public Mensajero(Monitor m) {
+            this.mensajeAEnviar="";
+            this.m=m;
+        }
+        
+        @Override
+        public void run (){
+            m.mensaje(2, "", mensajeAEnviar);
+//            if (cont!=0){
+//                mensajeAEnviar=buzon[cont2];
+//                mensajeAEnviar=mensajeAEnviar+"--Mensaje enviado";
+//                buzon[cont2]=mensajeAEnviar;
+//                actualizarBuzon();
+//                cont2+=1;
+//               int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000; 
+//                try {
+//                    Thread.sleep(velocidad);
+//                } catch (InterruptedException ex) {
+//                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+//                }
+//            }
+        }
         
         // Debe buscar el mensaje con la prioridad más alta
         // Envía el mensaje del buzón y lo debe mostrar en consola
