@@ -38,7 +38,6 @@ public class frmMain extends javax.swing.JFrame {
         "Ya no sé que más escribir xd",
         "Todos saben que la mayoría de estudiantes copia en la modalida virtual"};
     private final Emisor emisor = new Emisor();
-    private final Mensajero mensajero = new Mensajero();
 
     /**
      * Creates new form frmMain
@@ -67,11 +66,42 @@ public class frmMain extends javax.swing.JFrame {
             } catch (InterruptedException ex) {
                 Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
             }
-            mensaje=mensajes[(int)(Math.random()*19-0)+0]+": Enviando";
+            mensaje=mensajes[(int)(Math.random()*19-0)+0];
             buzon[lugar]=mensaje;
-            txtBuzon.setText(txtBuzon.getText()+buzon[lugar]+"\n");
-            System.out.println(mensaje);
+            txtBuzon.setText(txtBuzon.getText()+buzon[lugar]+": Enviado\n");
+            Mensajero mensajero= new Mensajero();
+            mensajero.Cambio(mensaje);
+            mensajero.start();
         }
+        public class Mensajero extends Thread {
+        
+        public String mensajeAEnviar = "";
+        public void Cambio(String men)
+        {
+            mensajeAEnviar = men;
+        }
+        public void run()
+        {
+             int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+            try {
+                Thread.sleep(velocidad);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            Mostrar();
+        }
+        public void Mostrar()
+        {
+            
+            System.out.println(mensajeAEnviar+": Enviado");
+        }
+        
+        // Debe buscar el mensaje con la prioridad más alta
+        // Envía el mensaje del buzón y lo debe mostrar en consola
+        // Ojo que el text area debe indicar que línea de mensaje ya fue entregado
+        // La línea que acaba de enviar debe mostrar al final un mensaje tipo: "Mensaje envíado"
+        //int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+    }
         
         // Debe buscar un mensaje aleatorio (0-19)
         // Si hay espacio en el buzón, debe colocar el mensaje en el text area
@@ -80,17 +110,7 @@ public class frmMain extends javax.swing.JFrame {
         //int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
     }
     
-    public class Mensajero extends Thread {
-        
-        public String mensajeAEnviar = "";
-        
-        
-        // Debe buscar el mensaje con la prioridad más alta
-        // Envía el mensaje del buzón y lo debe mostrar en consola
-        // Ojo que el text area debe indicar que línea de mensaje ya fue entregado
-        // La línea que acaba de enviar debe mostrar al final un mensaje tipo: "Mensaje envíado"
-        //int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
-    }
+    
     
     public void actualizarBuzon() {
         txtBuzon.setText(buzon[0] + "\n" + buzon[1] + "\n" + buzon[2] + "\n" + buzon[3] + "\n" + buzon[4]);
@@ -312,7 +332,6 @@ public class frmMain extends javax.swing.JFrame {
         btnMasMensajeros.setEnabled(false);
         btnIniciar.setEnabled(false);
         emisor.start();
-        mensajero.start();
     }//GEN-LAST:event_btnIniciarActionPerformed
 
     /**
