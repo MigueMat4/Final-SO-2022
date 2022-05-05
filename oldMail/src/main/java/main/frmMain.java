@@ -4,38 +4,42 @@
  */
 package main;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  *
  * @author mfmatul
  */
 public class frmMain extends javax.swing.JFrame {
-    
+    int contador = 1;
     static final int N = 5; // Tamaño del buzón
     String buzon[] = new String[N]; // Buzón para mensajes
     private int contadorEmisores = 1;
     private int contadorMensajeros = 1;
-    String[] mensajes = {"El Real Madrid es el mejor equipo del mundo", 
-        "DC es mejor que Marvel", 
-        "Sistemas Operativos fue el curso favorito de los estudiantes", 
-        "Ella no te ama :'c",
-        "La pizza con piña sí es buena",
-        "La paciencia es una virtud",
-        "En clases no hay dudas, pero en los exámenes sí ¬¬",
-        "Todos saben que Batman es mejor que Superman",
-        "Esperamos algún día volver a la normalidad",
-        "Puro manco estaba en el Team Iron Man",
-        "Todos sabemos que Capitán América tenía la razón en Civil War",
-        "Los tqm mis queridos estudiantes",
-        "¿Cuándo jugamos una partida de among us?",
-        "A los introvertidos no les afectó la pandemia",
-        "XV Simposio - Ingeniería que transforma al mundo",
-        "Todos saben que el frío es mejor que el calor",
-        "Todos saben que Cristiano Ronaldo es mejor que Messi",
-        "Hola, cómo están? Todo bien? Todo correcto?",
-        "Ya no sé que más escribir xd",
-        "Todos saben que la mayoría de estudiantes copia en la modalida virtual"};
     private final Emisor emisor = new Emisor();
     private final Mensajero mensajero = new Mensajero();
+    Monitor monitor;
+    String[] mensajes = {"El Real Madrid es el mejor equipo del mundo", 
+    "DC es mejor que Marvel", 
+    "Sistemas Operativos fue el curso favorito de los estudiantes", 
+    "Ella no te ama :'c",
+    "La pizza con piña sí es buena",
+    "La paciencia es una virtud",
+    "En clases no hay dudas, pero en los exámenes sí ¬¬",
+    "Todos saben que Batman es mejor que Superman",
+    "Esperamos algún día volver a la normalidad",
+    "Puro manco estaba en el Team Iron Man",
+    "Todos sabemos que Capitán América tenía la razón en Civil War",
+    "Los tqm mis queridos estudiantes",
+    "¿Cuándo jugamos una partida de among us?",
+    "A los introvertidos no les afectó la pandemia",
+    "XV Simposio - Ingeniería que transforma al mundo",
+    "Todos saben que el frío es mejor que el calor",
+    "Todos saben que Cristiano Ronaldo es mejor que Messi",
+    "Hola, cómo están? Todo bien? Todo correcto?",
+    "Ya no sé que más escribir xd",
+    "Todos saben que la mayoría de estudiantes copia en la modalida virtual"};
 
     /**
      * Creates new form frmMain
@@ -49,10 +53,59 @@ public class frmMain extends javax.swing.JFrame {
             buzon[i] = "";
     }
     
+    class Monitor{
+        int critica = 0;
+        int posicion = 0;
+        
+        
+        public Monitor(){
+            critica = 0;
+        }
+        public synchronized void MonitorProcesador(Integer valor, Integer tiempo){
+            //Region critica
+            if(tiempo == 0){
+                buzon[posicion] = buzon[posicion] + " - Enviado";
+                posicion++;
+            }else{
+                critica = valor;
+                buzon [posicion] += mensajes[critica] + "\n";
+                txtBuzon.setText(buzon[posicion]);
+                posicion++;
+            }
+            actualizarBuzon();
+        }
+    }
+    
     public class Emisor extends Thread {
         
-        public String mensaje = "";
-        
+        public String mensaje;
+        int numero;    
+        private boolean run = false;
+        public void startRunning(){run = true;}
+        public void stopRunning(){run = false;}
+        public int getRandom(){
+                int random = (int)(Math.random() * 5 + 1);
+                return random;
+        }
+        public Emisor(){
+            numero = 0;
+            mensaje = "";
+        }
+        @Override
+        public void run(){
+            numero = Integer.parseInt(lblEmisores.getText()) * 1000;
+            try {
+                sleep(numero);
+                while (run) {
+                    if (N > contador) {
+                        monitor.MonitorProcesador(getRandom(), numero);
+                        sleep(numero);
+                    }
+                }
+            } catch (InterruptedException ex) {
+                Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+            }       
+        }
         // Debe buscar un mensaje aleatorio (0-19)
         // Si hay espacio en el buzón, debe colocar el mensaje en el text area
         // Ojo que el text area debe indicar el orden de prioridad en base a las líneas
@@ -246,6 +299,7 @@ public class frmMain extends javax.swing.JFrame {
         );
 
         pack();
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnMasEmisoresActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMasEmisoresActionPerformed
@@ -290,8 +344,9 @@ public class frmMain extends javax.swing.JFrame {
         btnMenosMensajeros.setEnabled(false);
         btnMasMensajeros.setEnabled(false);
         btnIniciar.setEnabled(false);
-        emisor.start();
         mensajero.start();
+        contador++;
+                
     }//GEN-LAST:event_btnIniciarActionPerformed
 
     /**
