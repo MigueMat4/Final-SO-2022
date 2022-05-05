@@ -66,7 +66,7 @@ public class frmMain extends javax.swing.JFrame {
         public void run(){
             int elemento;
             while(true){ 
-                elemento = this.buscar_mensaje(); // Genera mensaje para colocar en el búfer
+                elemento = this.buscar_mensaje(); // Genera mensaje random
                 // Inicio semáforo vacias
                 while (buzon<=0)
                      buzon = contadorEmisores--;
@@ -369,6 +369,7 @@ public class frmMain extends javax.swing.JFrame {
         btnIniciar.setEnabled(false);
         emisor.start();
         mensajero.start();
+        
     }//GEN-LAST:event_btnIniciarActionPerformed
 
     /**
