@@ -3,7 +3,12 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
 package main;
-
+import static java.awt.image.ImageObserver.ABORT;
+import static java.lang.Math.random;
+import static java.lang.StrictMath.random;
+import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 /**
  *
  * @author mfmatul
@@ -14,6 +19,7 @@ public class frmMain extends javax.swing.JFrame {
     String buzon[] = new String[N]; // Buzón para mensajes
     private int contadorEmisores = 1;
     private int contadorMensajeros = 1;
+    
     String[] mensajes = {"El Real Madrid es el mejor equipo del mundo", 
         "DC es mejor que Marvel", 
         "Sistemas Operativos fue el curso favorito de los estudiantes", 
@@ -36,7 +42,8 @@ public class frmMain extends javax.swing.JFrame {
         "Todos saben que la mayoría de estudiantes copia en la modalida virtual"};
     private final Emisor emisor = new Emisor();
     private final Mensajero mensajero = new Mensajero();
-
+    public Monitor monitor = new Monitor(buzon,mensajes);
+   
     /**
      * Creates new form frmMain
      */
@@ -48,27 +55,81 @@ public class frmMain extends javax.swing.JFrame {
         for (int i=0; i<N; i++)
             buzon[i] = "";
     }
-    
     public class Emisor extends Thread {
-        
-        public String mensaje = "";
-        
+       
         // Debe buscar un mensaje aleatorio (0-19)
+         public String buscarMensaje(String[] mensajes){
+            String mensaje = "";
+            int min = 1;
+            int max = 20;
+            int value = (int) (Math.random()*(max-min)) + min;
+            mensaje = mensajes[value];
+            return mensaje;
+        }
         // Si hay espacio en el buzón, debe colocar el mensaje en el text area
+         
         // Ojo que el text area debe indicar el orden de prioridad en base a las líneas
         // El orden de ingreso es FIFO
         //int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+        
+        @Override
+        public void run() {
+            // Operaciones pre región crítica
+            while(true){
+            String temo = buscarMensaje(mensajes);
+            monitor.Mon(buscarMensaje(mensajes), 0);
+            buzon = monitor.buzon;
+            actualizarBuzon();
+            try {
+                 Thread.sleep(Integer.parseInt(lblEmisores.getText()) * 1000);
+             } catch (InterruptedException ex) {
+                 Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+             }    
+            }
+        }
     }
     
     public class Mensajero extends Thread {
-        
         public String mensajeAEnviar = "";
         
         // Debe buscar el mensaje con la prioridad más alta
+       public String enviar_mensaje(int[] region_critica){
+           String mensaje = "enviado";
+           int pos = 0;
+           while(pos < 5){
+            if (buzon[0].contains(mensaje)) {
+                System.out.println("Encontrado");
+                pos++;
+                }
+                  else{
+                  buzon[pos] = buzon[pos] + " enviado";
+               }
+           }
+           return mensaje;
+       }
         // Envía el mensaje del buzón y lo debe mostrar en consola
+        
+       
         // Ojo que el text area debe indicar que línea de mensaje ya fue entregado
         // La línea que acaba de enviar debe mostrar al final un mensaje tipo: "Mensaje envíado"
         //int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+        
+       @Override
+        public void run() {
+            // Operaciones pre región crítica
+            //String temo = buscarMensaje(mensajes);
+            while(true){
+            monitor.Mon(" enviado", 1);
+            buzon = monitor.buzon;
+            actualizarBuzon();
+             try {
+                 Thread.sleep(Integer.parseInt(lblMensajeros.getText()) * 1000);
+             } catch (InterruptedException ex) {
+                 Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+             }
+            }
+           
+        }
     }
     
     public void actualizarBuzon() {
