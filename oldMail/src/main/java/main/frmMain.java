@@ -107,7 +107,7 @@ public class frmMain extends javax.swing.JFrame {
         // El orden de ingreso es FIFO
         //int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
     }
-    
+    //Mensajero
     public class Mensajero extends Thread {
         
         public String mensajeAEnviar = "";
