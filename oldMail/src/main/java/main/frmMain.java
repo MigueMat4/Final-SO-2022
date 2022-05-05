@@ -4,16 +4,23 @@
  */
 package main;
 
+import java.util.concurrent.Semaphore;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+
 /**
  *
  * @author mfmatul
  */
 public class frmMain extends javax.swing.JFrame {
-    
+    private static Semaphore mutex = new Semaphore(1, true); // Controla el acceso a la región crítica
     static final int N = 5; // Tamaño del buzón
     String buzon[] = new String[N]; // Buzón para mensajes
     private int contadorEmisores = 1;
     private int contadorMensajeros = 1;
+    private static int vacias = 5;//mensajes libress
+    private static int llenas = 0;//mensajes ingresados
     String[] mensajes = {"El Real Madrid es el mejor equipo del mundo", 
         "DC es mejor que Marvel", 
         "Sistemas Operativos fue el curso favorito de los estudiantes", 
@@ -45,19 +52,53 @@ public class frmMain extends javax.swing.JFrame {
         btnMenosEmisores.setEnabled(false);
         btnMenosMensajeros.setEnabled(false);
         txtBuzon.setEnabled(false);
-        for (int i=0; i<N; i++)
-            buzon[i] = "";
-    }
-    
+      
     public class Emisor extends Thread {
         
         public String mensaje = "";
-        
+        int pos;
+        int vel;
         // Debe buscar un mensaje aleatorio (0-19)
         // Si hay espacio en el buzón, debe colocar el mensaje en el text area
         // Ojo que el text area debe indicar el orden de prioridad en base a las líneas
         // El orden de ingreso es FIFO
         //int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+        public void run(){
+            int elemento;
+            while(true){ 
+                elemento = this.buscar_mensaje(); // Genera mensaje para colocar en el búfer
+                // Inicio semáforo vacias
+                while (buzon<=0)
+                     buzon = contadorEmisores--;
+                // Fin semáforo vacias
+                try {
+                    mutex.acquire(); // Entra a la región crítica
+                    txtBuzon.setText("Si hay espacio");
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                   actualizarBuzon()
+                try {
+                    Thread.sleep(vel*1000);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                mutex.release(); // Sale de la región crítica
+               
+            }
+        }
+      
+        private int buscar_mensaje(){
+            int pos = 0;
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+            }///buscar random en el vector de mensajes
+            int random = (int) ((Math.random() * mensajes.length));
+            mensajes =  (pos + 1) + "-" + mensajes[random]); 
+            return mensajes;
+        }
     }
     
     public class Mensajero extends Thread {
@@ -69,12 +110,48 @@ public class frmMain extends javax.swing.JFrame {
         // Ojo que el text area debe indicar que línea de mensaje ya fue entregado
         // La línea que acaba de enviar debe mostrar al final un mensaje tipo: "Mensaje envíado"
         //int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+           public void run() {
+            int elemento = 0;
+            while(true){ 
+                // Inicio semáforo llenas
+                while (llenas<=0)
+                   contadorMensajeros++;
+                // Fin semáforo llenas
+                try {
+                    mutex.acquire(); // Entra a la región crítica
+                    txtBuzon.setText("Enviar mensaje");
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                    actualizarBuzon();
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                mutex.release(); // Sale de la región crítica
+                contadorMensajeros--;
+               
+            }
+        }
+        
+        private void prioridad_alta(int elemento){
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            System.out.println("La prioridad mas alta" + " ");
+        }
+    }
+        
+        
     }
     
     public void actualizarBuzon() {
         txtBuzon.setText(buzon[0] + "\n" + buzon[1] + "\n" + buzon[2] + "\n" + buzon[3] + "\n" + buzon[4]);
     }
-
+        }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
