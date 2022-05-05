@@ -4,6 +4,9 @@
  */
 package main;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  *
  * @author mfmatul
@@ -52,6 +55,22 @@ public class frmMain extends javax.swing.JFrame {
     public class Emisor extends Thread {
         
         public String mensaje = "";
+         public void run(){
+            for(int i=0; i<5;i++){
+            Buscarmsg(i);
+            }
+        }
+        public void Buscarmsg(int lugar){
+            int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+            try {
+                Thread.sleep(velocidad);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            mensaje=mensajes[(int)(Math.random()*19-0)+0]+": Enviando";
+            buzon[lugar]=mensaje;
+            System.out.println(mensaje);
+        }
         
         // Debe buscar un mensaje aleatorio (0-19)
         // Si hay espacio en el buzón, debe colocar el mensaje en el text area
@@ -63,6 +82,7 @@ public class frmMain extends javax.swing.JFrame {
     public class Mensajero extends Thread {
         
         public String mensajeAEnviar = "";
+        
         
         // Debe buscar el mensaje con la prioridad más alta
         // Envía el mensaje del buzón y lo debe mostrar en consola
