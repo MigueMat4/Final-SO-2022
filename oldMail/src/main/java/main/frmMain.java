@@ -4,6 +4,9 @@
  */
 package main;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  *
  * @author mfmatul
@@ -11,7 +14,7 @@ package main;
 public class frmMain extends javax.swing.JFrame {
     
     static final int N = 5; // Tamaño del buzón
-    String buzon[] = new String[N]; // Buzón para mensajes
+    public String buzon[] = new String[N]; // Buzón para mensajes
     private int contadorEmisores = 1;
     private int contadorMensajeros = 1;
     String[] mensajes = {"El Real Madrid es el mejor equipo del mundo", 
@@ -36,6 +39,7 @@ public class frmMain extends javax.swing.JFrame {
         "Todos saben que la mayoría de estudiantes copia en la modalida virtual"};
     private final Emisor emisor = new Emisor();
     private final Mensajero mensajero = new Mensajero();
+    super_monitor monitor = new super_monitor();
 
     /**
      * Creates new form frmMain
@@ -50,9 +54,53 @@ public class frmMain extends javax.swing.JFrame {
     }
     
     public class Emisor extends Thread {
-        
+
         public String mensaje = "";
+
+        public Boolean encendido = false;
         
+        public void run() {
+            while (true) {
+                if (encendido) {
+                    // Operaciones pre región crítica
+                    this.mensaje = mensajes[producir_elemento()];
+                    monitor.insertar(this.mensaje);
+                    actualizarBuzon();
+
+                    int tiempo = Integer.parseInt(lblEmisores.getText());
+                    int tiempodif;
+                    if (tiempo == 1) {
+                        tiempodif = 1000;
+                    } else if (tiempo == 2) {
+                        tiempodif = 2000;
+                    } else if (tiempo == 3) {
+                        tiempodif = 3000;
+                    } else if (tiempo == 4) {
+                        tiempodif = 4000;
+                    } else if (tiempo == 5) {
+                        tiempodif = 5000;
+                    }
+
+                    try {
+                        Thread.sleep(/*tiempodif*/3000); //No me dejo colocar el tiempo porque no está inicualizado
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }
+        }
+        
+        private int producir_elemento(){
+            return (int)(Math.random() * 19) + 1;
+        }
+        
+        public void apagar() {
+            this.encendido = false;
+        }
+
+        public void encender() {
+            this.encendido = true;
+        }
         // Debe buscar un mensaje aleatorio (0-19)
         // Si hay espacio en el buzón, debe colocar el mensaje en el text area
         // Ojo que el text area debe indicar el orden de prioridad en base a las líneas
@@ -64,11 +112,95 @@ public class frmMain extends javax.swing.JFrame {
         
         public String mensajeAEnviar = "";
         
+        public Boolean encendido = false;
+        
+        public void run() {
+            while (true) {
+                if (encendido) {
+                    monitor.eliminar();
+                    actualizarBuzon();
+
+                    int tiempo = Integer.parseInt(lblMensajeros.getText());
+                    int tiempodif;
+
+                    if (tiempo == 1) {
+                        tiempodif = 1000;
+                    } else if (tiempo == 2) {
+                        tiempodif = 2000;
+                    } else if (tiempo == 3) {
+                        tiempodif = 3000;
+                    } else if (tiempo == 4) {
+                        tiempodif = 4000;
+                    } else if (tiempo == 5) {
+                        tiempodif = 5000;
+                    }
+
+                    try {
+                        Thread.sleep(/*tiempodif*/3000); //No me dejo colocar el tiempo porque no está inicualizado
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }
+        }
+        
+        public void apagar() {
+            this.encendido = false;
+        }
+
+        public void encender() {
+            this.encendido = true;
+        }
+        
         // Debe buscar el mensaje con la prioridad más alta
         // Envía el mensaje del buzón y lo debe mostrar en consola
         // Ojo que el text area debe indicar que línea de mensaje ya fue entregado
         // La línea que acaba de enviar debe mostrar al final un mensaje tipo: "Mensaje envíado"
         //int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+    }
+    
+    class super_monitor { 
+        private int posicion = 0, inf = 0, sup = 0; // contadores e índices
+        // monitor como solución
+        public super_monitor() {
+            
+        }
+        /**
+         * synchronized = Una vez un hilo ha empezado a ejecutar ese método, no
+         * se permitirá que ningún otro hilo empiece a ejecutar ningún otro
+         * método synchronized de ese objeto
+         */
+        public synchronized void insertar(String mensaje) {
+            if (posicion == N) {
+                ir_a_estado_inactivo();//Si el buzon está lleno
+            }
+            
+            buzon[sup] = mensaje;
+            sup = (sup + 1) % N;
+            posicion = posicion++;
+            
+            if (posicion > 0) {
+                notify(); 
+            }
+        }
+        
+        public synchronized void eliminar() {
+            if (posicion == 0) {//Si el buzon esta vacio
+                ir_a_estado_inactivo();
+            }
+            
+            buzon[inf] = buzon[inf] + " Enviado";
+            inf = (inf + 1) % N;
+            posicion = posicion--;
+
+        }
+        
+        private void ir_a_estado_inactivo() {
+            try {
+                wait(); // Duerme al proceso en turno
+            } catch (InterruptedException exc) {
+            };
+        }
     }
     
     public void actualizarBuzon() {
