@@ -4,11 +4,46 @@
  */
 package main;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  *
  * @author mfmatul
  */
 public class frmMain extends javax.swing.JFrame {
+    
+    static final int N = 5; // Tamaño del buzón
+    String buzon[] = new String[N]; // Buzón para mensajes
+    private int contadorEmisores = 1;
+    private int contadorMensajeros = 1;
+    String[] mensajes = {"El Real Madrid es el mejor equipo del mundo", 
+        "DC es mejor que Marvel", 
+        "Sistemas Operativos fue el curso favorito de los estudiantes", 
+        "Ella no te ama :'c",
+        "La pizza con piña sí es buena",
+        "La paciencia es una virtud",
+        "En clases no hay dudas, pero en los exámenes sí ¬¬",
+        "Todos saben que Batman es mejor que Superman",
+        "Esperamos algún día volver a la normalidad",
+        "Puro manco estaba en el Team Iron Man",
+        "Todos sabemos que Capitán América tenía la razón en Civil War",
+        "Los tqm mis queridos estudiantes",
+        "¿Cuándo jugamos una partida de among us?",
+        "A los introvertidos no les afectó la pandemia",
+        "XV Simposio - Ingeniería que transforma al mundo",
+        "Todos saben que el frío es mejor que el calor",
+        "Todos saben que Cristiano Ronaldo es mejor que Messi",
+        "Hola, cómo están? Todo bien? Todo correcto?",
+        "Ya no sé que más escribir xd",
+        "Todos saben que la mayoría de estudiantes copia en la modalida virtual"};
+    private final Emisor emisor = new Emisor();
+    private final Mensajero mensajero = new Mensajero();
+    private Monitor monitor = new Monitor();
+    //Variables adicionales
+    public int cantMensajes = 0;
+    public int cantEnviados = 0;
+    public int mensajesRestantes = 0;
 
     /**
      * Creates new form frmMain
@@ -18,6 +53,98 @@ public class frmMain extends javax.swing.JFrame {
         btnMenosEmisores.setEnabled(false);
         btnMenosMensajeros.setEnabled(false);
         txtBuzon.setEnabled(false);
+        for (int i=0; i<N; i++){
+            buzon[i] = "";
+        }
+    }
+    
+    public class Monitor {
+
+        public synchronized void administrarBuzon(int numMensaje) {
+            if (numMensaje == 20) {
+                buzon[cantEnviados] = buzon[cantEnviados] + " - Mensaje Enviado";
+                System.out.println("Mensaje enviado: " + buzon[cantEnviados]);
+                cantEnviados++;
+                mensajesRestantes--;
+            } else {
+                buzon[cantMensajes] =(cantMensajes +1) + ".- " + mensajes[numMensaje];
+                System.out.println("Mensaje generado: " + buzon[cantMensajes]);
+                cantMensajes++;
+                mensajesRestantes++;
+            }
+            actualizarBuzon();
+
+        }
+    }
+    
+    public class Emisor extends Thread {
+        //El emisor es el que funciona como un productor
+        
+        public String mensaje = "";
+        public void run(){
+            System.out.println("Inicio del emisor");
+            while(true){
+                while(cantMensajes  < 5){
+                try {
+                    int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+                    Thread.sleep(velocidad);
+                    int nMensaje = generarMensajeAleatorio();
+                    monitor.administrarBuzon(nMensaje);
+                    
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+
+                }
+            }
+        }
+        // Debe buscar un mensaje aleatorio (0-19)
+        // Si hay espacio en el buzón, debe colocar el mensaje en el text area
+        // Ojo que el text area debe indicar el orden de prioridad en base a las líneas
+        // El orden de ingreso es FIFO
+        //int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+    }
+    
+    public class Mensajero extends Thread {
+        
+        //public String mensajeAEnviar = "";
+    
+        @Override
+        public void run(){
+            System.out.println("Inicio del mensajero");
+            while(true){
+                while(cantEnviados < 5){
+                try {
+                    int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+                    Thread.sleep(velocidad);
+                    //Le envió un numero que no esta dentro del rango de los mensajes
+                    //para que active el mandar mensajes
+                    if(mensajesRestantes > 0){
+                        monitor.administrarBuzon(20); 
+                    }
+                  
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                }
+            }
+            
+        }
+       
+        
+        // Debe buscar el mensaje con la prioridad más alta
+        // Envía el mensaje del buzón y lo debe mostrar en consola
+        // Ojo que el text area debe indicar que línea de mensaje ya fue entregado
+        // La línea que acaba de enviar debe mostrar al final un mensaje tipo: "Mensaje envíado"
+        //int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+    }
+    
+    public void actualizarBuzon() {
+        txtBuzon.setText(buzon[0] + "\n" + buzon[1] + "\n" + buzon[2] + "\n" + buzon[3] + "\n" + buzon[4]);
+    }
+    
+    public int generarMensajeAleatorio(){
+        return (int) (Math.random() * 19 + 0);
     }
 
     /**
@@ -39,11 +166,12 @@ public class frmMain extends javax.swing.JFrame {
         btnMenosMensajeros = new javax.swing.JButton();
         lblMensajeros = new javax.swing.JLabel();
         btnMasMensajeros = new javax.swing.JButton();
-        txtBuzon = new javax.swing.JTextField();
         jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
         lblAcceso = new javax.swing.JLabel();
         btnIniciar = new javax.swing.JButton();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        txtBuzon = new javax.swing.JTextArea();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -53,23 +181,43 @@ public class frmMain extends javax.swing.JFrame {
         jLabel2.setText("1a convocatoria");
         jLabel2.setToolTipText("");
 
-        jLabel3.setText("Emisores:");
+        jLabel3.setText("Velocidad Emisores:");
 
         btnMenosEmisores.setText("-");
+        btnMenosEmisores.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnMenosEmisoresActionPerformed(evt);
+            }
+        });
 
         lblEmisores.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         lblEmisores.setText("1");
 
         btnMasEmisores.setText("+");
+        btnMasEmisores.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnMasEmisoresActionPerformed(evt);
+            }
+        });
 
-        jLabel4.setText("Mensajeros:");
+        jLabel4.setText("Velocidad Mensajeros:");
 
         btnMenosMensajeros.setText("-");
+        btnMenosMensajeros.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnMenosMensajerosActionPerformed(evt);
+            }
+        });
 
         lblMensajeros.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         lblMensajeros.setText("1");
 
         btnMasMensajeros.setText("+");
+        btnMasMensajeros.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnMasMensajerosActionPerformed(evt);
+            }
+        });
 
         jLabel5.setText("Central de correo:");
 
@@ -79,6 +227,15 @@ public class frmMain extends javax.swing.JFrame {
 
         btnIniciar.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
         btnIniciar.setText("Iniciar programa");
+        btnIniciar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnIniciarActionPerformed(evt);
+            }
+        });
+
+        txtBuzon.setColumns(20);
+        txtBuzon.setRows(5);
+        jScrollPane1.setViewportView(txtBuzon);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -95,14 +252,14 @@ public class frmMain extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnMasEmisores)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jLabel4)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(btnMenosMensajeros)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(lblMensajeros)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnMasMensajeros))
-                    .addComponent(jLabel4))
+                        .addComponent(btnMasMensajeros)))
                 .addGap(36, 36, 36))
             .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -113,12 +270,12 @@ public class frmMain extends javax.swing.JFrame {
                         .addGap(98, 98, 98)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel1)
-                            .addComponent(txtBuzon, javax.swing.GroupLayout.PREFERRED_SIZE, 440, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel5)
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(jLabel6)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(lblAcceso))))
+                                .addComponent(lblAcceso))
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 440, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addGroup(layout.createSequentialGroup()
                         .addGap(205, 205, 205)
                         .addComponent(btnIniciar)))
@@ -150,7 +307,7 @@ public class frmMain extends javax.swing.JFrame {
                 .addGap(10, 10, 10)
                 .addComponent(jLabel5)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(txtBuzon, javax.swing.GroupLayout.PREFERRED_SIZE, 138, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 138, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel6)
@@ -162,6 +319,53 @@ public class frmMain extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void btnMasEmisoresActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMasEmisoresActionPerformed
+        contadorEmisores++;
+        lblEmisores.setText(String.valueOf(contadorEmisores));
+        if (contadorEmisores == 2)
+            btnMenosEmisores.setEnabled(true);
+        if (contadorEmisores == 5)
+            btnMasEmisores.setEnabled(false);
+    }//GEN-LAST:event_btnMasEmisoresActionPerformed
+
+    private void btnMenosEmisoresActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMenosEmisoresActionPerformed
+        contadorEmisores--;
+        lblEmisores.setText(String.valueOf(contadorEmisores));
+        if (contadorEmisores == 4)
+            btnMasEmisores.setEnabled(true);
+        if (contadorEmisores == 1)
+            btnMenosEmisores.setEnabled(false);
+    }//GEN-LAST:event_btnMenosEmisoresActionPerformed
+
+    private void btnMenosMensajerosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMenosMensajerosActionPerformed
+        contadorMensajeros--;
+        lblMensajeros.setText(String.valueOf(contadorMensajeros));
+        if (contadorMensajeros == 4)
+            btnMasMensajeros.setEnabled(true);
+        if (contadorMensajeros == 1)
+            btnMenosMensajeros.setEnabled(false);
+    }//GEN-LAST:event_btnMenosMensajerosActionPerformed
+
+    private void btnMasMensajerosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMasMensajerosActionPerformed
+        contadorMensajeros++;
+        lblMensajeros.setText(String.valueOf(contadorMensajeros));
+        if (contadorMensajeros == 2)
+            btnMenosMensajeros.setEnabled(true);
+        if (contadorMensajeros == 5)
+            btnMasMensajeros.setEnabled(false);
+    }//GEN-LAST:event_btnMasMensajerosActionPerformed
+
+    private void btnIniciarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnIniciarActionPerformed
+        System.out.println("Inicio el programa");
+        btnMenosEmisores.setEnabled(false);
+        btnMasEmisores.setEnabled(false);
+        btnMenosMensajeros.setEnabled(false);
+        btnMasMensajeros.setEnabled(false);
+        btnIniciar.setEnabled(false);
+        emisor.start();
+        mensajero.start();
+    }//GEN-LAST:event_btnIniciarActionPerformed
 
     /**
      * @param args the command line arguments
@@ -210,9 +414,10 @@ public class frmMain extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
+    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JLabel lblAcceso;
     private javax.swing.JLabel lblEmisores;
     private javax.swing.JLabel lblMensajeros;
-    private javax.swing.JTextField txtBuzon;
+    private javax.swing.JTextArea txtBuzon;
     // End of variables declaration//GEN-END:variables
 }
