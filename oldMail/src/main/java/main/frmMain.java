@@ -10,6 +10,8 @@ package main;
  */
 public class frmMain extends javax.swing.JFrame {
     
+    static final int N = 5; // Tamaño del buzón
+    String buzon[] = new String[N]; // Buzón para mensajes
     private int contadorEmisores = 1;
     private int contadorMensajeros = 1;
     String[] mensajes = {"El Real Madrid es el mejor equipo del mundo", 
@@ -32,6 +34,8 @@ public class frmMain extends javax.swing.JFrame {
         "Hola, cómo están? Todo bien? Todo correcto?",
         "Ya no sé que más escribir xd",
         "Todos saben que la mayoría de estudiantes copia en la modalida virtual"};
+    private final Emisor emisor = new Emisor();
+    private final Mensajero mensajero = new Mensajero();
 
     /**
      * Creates new form frmMain
@@ -41,20 +45,34 @@ public class frmMain extends javax.swing.JFrame {
         btnMenosEmisores.setEnabled(false);
         btnMenosMensajeros.setEnabled(false);
         txtBuzon.setEnabled(false);
+        for (int i=0; i<N; i++)
+            buzon[i] = "";
     }
     
-    public class Emisor {
+    public class Emisor extends Thread {
+        
+        public String mensaje = "";
+        
         // Debe buscar un mensaje aleatorio (0-19)
         // Si hay espacio en el buzón, debe colocar el mensaje en el text area
         // Ojo que el text area debe indicar el orden de prioridad en base a las líneas
         // El orden de ingreso es FIFO
+        //int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
     }
     
-    public class Mensajero {
+    public class Mensajero extends Thread {
+        
+        public String mensajeAEnviar = "";
+        
         // Debe buscar el mensaje con la prioridad más alta
-        // Libera del buzón el mensaje y lo debe mostrar en consola
+        // Envía el mensaje del buzón y lo debe mostrar en consola
         // Ojo que el text area debe indicar que línea de mensaje ya fue entregado
-        // La línea que acaba de enviar debe mostrar un mensaje tipo: "Mensaje envíado"
+        // La línea que acaba de enviar debe mostrar al final un mensaje tipo: "Mensaje envíado"
+        //int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+    }
+    
+    public void actualizarBuzon() {
+        txtBuzon.setText(buzon[0] + "\n" + buzon[1] + "\n" + buzon[2] + "\n" + buzon[3] + "\n" + buzon[4]);
     }
 
     /**
@@ -76,11 +94,12 @@ public class frmMain extends javax.swing.JFrame {
         btnMenosMensajeros = new javax.swing.JButton();
         lblMensajeros = new javax.swing.JLabel();
         btnMasMensajeros = new javax.swing.JButton();
-        txtBuzon = new javax.swing.JTextField();
         jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
         lblAcceso = new javax.swing.JLabel();
         btnIniciar = new javax.swing.JButton();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        txtBuzon = new javax.swing.JTextArea();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -90,7 +109,7 @@ public class frmMain extends javax.swing.JFrame {
         jLabel2.setText("1a convocatoria");
         jLabel2.setToolTipText("");
 
-        jLabel3.setText("Emisores:");
+        jLabel3.setText("Velocidad Emisores:");
 
         btnMenosEmisores.setText("-");
         btnMenosEmisores.addActionListener(new java.awt.event.ActionListener() {
@@ -109,7 +128,7 @@ public class frmMain extends javax.swing.JFrame {
             }
         });
 
-        jLabel4.setText("Mensajeros:");
+        jLabel4.setText("Velocidad Mensajeros:");
 
         btnMenosMensajeros.setText("-");
         btnMenosMensajeros.addActionListener(new java.awt.event.ActionListener() {
@@ -142,6 +161,10 @@ public class frmMain extends javax.swing.JFrame {
             }
         });
 
+        txtBuzon.setColumns(20);
+        txtBuzon.setRows(5);
+        jScrollPane1.setViewportView(txtBuzon);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -157,14 +180,14 @@ public class frmMain extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnMasEmisores)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jLabel4)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(btnMenosMensajeros)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(lblMensajeros)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnMasMensajeros))
-                    .addComponent(jLabel4))
+                        .addComponent(btnMasMensajeros)))
                 .addGap(36, 36, 36))
             .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -175,12 +198,12 @@ public class frmMain extends javax.swing.JFrame {
                         .addGap(98, 98, 98)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel1)
-                            .addComponent(txtBuzon, javax.swing.GroupLayout.PREFERRED_SIZE, 440, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel5)
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(jLabel6)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(lblAcceso))))
+                                .addComponent(lblAcceso))
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 440, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addGroup(layout.createSequentialGroup()
                         .addGap(205, 205, 205)
                         .addComponent(btnIniciar)))
@@ -212,7 +235,7 @@ public class frmMain extends javax.swing.JFrame {
                 .addGap(10, 10, 10)
                 .addComponent(jLabel5)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(txtBuzon, javax.swing.GroupLayout.PREFERRED_SIZE, 138, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 138, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel6)
@@ -267,6 +290,8 @@ public class frmMain extends javax.swing.JFrame {
         btnMenosMensajeros.setEnabled(false);
         btnMasMensajeros.setEnabled(false);
         btnIniciar.setEnabled(false);
+        emisor.start();
+        mensajero.start();
     }//GEN-LAST:event_btnIniciarActionPerformed
 
     /**
@@ -316,9 +341,10 @@ public class frmMain extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
+    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JLabel lblAcceso;
     private javax.swing.JLabel lblEmisores;
     private javax.swing.JLabel lblMensajeros;
-    private javax.swing.JTextField txtBuzon;
+    private javax.swing.JTextArea txtBuzon;
     // End of variables declaration//GEN-END:variables
 }
