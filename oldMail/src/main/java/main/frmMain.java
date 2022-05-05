@@ -4,6 +4,10 @@
  */
 package main;
 
+import java.util.concurrent.Semaphore;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  *
  * @author mfmatul
@@ -11,7 +15,11 @@ package main;
 public class frmMain extends javax.swing.JFrame {
     
     static final int N = 5; // Tamaño del buzón
-    String buzon[] = new String[N]; // Buzón para mensajes
+//    String buzon[] = new String[5]; // Buzón para mensajes
+     private static int bufer[] = new int[5];
+     private static Semaphore mutex = new Semaphore(1, true); // Controla el acceso a la región crítica
+    private static int vacias = 5; // Cuenta las ranuras vacías del búfer
+    private static int llenas = 0; // Cuenta las ranuras llenas del búfer
     private int contadorEmisores = 1;
     private int contadorMensajeros = 1;
     String[] mensajes = {"El Real Madrid es el mejor equipo del mundo", 
@@ -46,33 +54,172 @@ public class frmMain extends javax.swing.JFrame {
         btnMenosMensajeros.setEnabled(false);
         txtBuzon.setEnabled(false);
         for (int i=0; i<N; i++)
-            buzon[i] = "";
+            Integer.toString(bufer)[i] = "";
     }
     
+    
+    public int up(int semaforo){
+        semaforo++;
+        return semaforo;
+    }
+    
+    public int down(int semaforo){
+        semaforo--;
+        return semaforo;
+    }
+    
+     public void insertar_elemento(int elemento){
+        int pos = -1;
+        for (int i=0; i<=4; i++)
+        {
+            if("".equals(bufer[i]))
+                pos = i;
+            
+        }
+        bufer[pos] = elemento; 
+    }
+     
+     public int quitar_elemento(){
+        int elemento;
+        int pos = -1; // -1 para saber que realmente funciona la exclusión mutua
+        for (int i=0; i<=4; i++)
+        {
+            if (bufer[i] != 0)
+                pos = i;
+        }
+        elemento = bufer[pos]; // Si es -1 es porque no se logró la exclusión mutua
+        bufer[pos] = 0;
+        return elemento;
+    }
+     
+     
+     public void actualizarRegionCritica(){
+        String texto = "";
+        for (int i=0; i<=4; i++){
+            texto += "[" + String.valueOf(bufer[i]) + "] ";
+        }
+    }
+     
+     
     public class Emisor extends Thread {
         
         public String mensaje = "";
+        
+        
+        
+//        public Emisor(){
+//            
+//            int mensaje2 = Integer. parseInt(mensaje);
+//            mensaje2 = (int)(Math.random()*19+1);
+//            
+//        }
+        
+        
         
         // Debe buscar un mensaje aleatorio (0-19)
         // Si hay espacio en el buzón, debe colocar el mensaje en el text area
         // Ojo que el text area debe indicar el orden de prioridad en base a las líneas
         // El orden de ingreso es FIFO
-        //int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+       @Override
+        public void run(){
+            int elemento; 
+            int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+            while(true){ // Ciclo del productor
+                elemento = this.producir_elemento(); // Genera un número para colocar en el búfer
+                // Inicio semáforo vacias
+                while (vacias<=0)
+                    
+                vacias = down(vacias);
+                // Fin semáforo vacias
+                try {
+                    mutex.acquire(); // Entra a la región crítica
+                    
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                insertar_elemento(elemento); // Coloca el nuevo elemento en el búfer
+                
+                actualizarBuzon();
+                
+                try {
+                    Thread.sleep(velocidad);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                mutex.release(); // Sale de la región crítica
+                llenas = up(llenas); // Incrementa la cuenta de ranuras llenas
+            }
+        }
+        
+         private int producir_elemento(){
+            int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+            try {
+                Thread.sleep(velocidad);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            return (int)(Math.random() * 19) + 1;
+        }
+    
+        
+        
+        
     }
+    
+
+    
+    
     
     public class Mensajero extends Thread {
         
+        
         public String mensajeAEnviar = "";
         
+        
+        
+    
         // Debe buscar el mensaje con la prioridad más alta
         // Envía el mensaje del buzón y lo debe mostrar en consola
         // Ojo que el text area debe indicar que línea de mensaje ya fue entregado
         // La línea que acaba de enviar debe mostrar al final un mensaje tipo: "Mensaje envíado"
-        //int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+        public void run() {
+             int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+            
+            while(true){ // Ciclo del consumidor
+                // Inicio semáforo llenas
+                while (llenas<=0)
+                    
+                llenas = down(llenas);
+                // Fin semáforo llenas
+                try {
+                    mutex.acquire(); // Entra a la región crítica
+//                    lblEstadoSemaforo.setText("Consumidor");
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                
+              quitar_elemento(); // Saca el elemento del búfer
+                actualizarBuzon();
+                try {
+                    Thread.sleep(velocidad);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                mutex.release(); // Sale de la región crítica
+                vacias = up(vacias); // Disminuye la cuenta de ranuras llenas
+                
+            }
+        }
+        
+        
     }
     
+    
+    
+   
+    
     public void actualizarBuzon() {
-        txtBuzon.setText(buzon[0] + "\n" + buzon[1] + "\n" + buzon[2] + "\n" + buzon[3] + "\n" + buzon[4]);
+        txtBuzon.setText(bufer[0] + "\n" + bufer[1] + "\n" + bufer[2] + "\n" + bufer[3] + "\n" + bufer[4]);
     }
 
     /**
