@@ -4,6 +4,9 @@
  */
 package main;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  *
  * @author mfmatul
@@ -36,7 +39,7 @@ public class frmMain extends javax.swing.JFrame {
         "Todos saben que la mayoría de estudiantes copia en la modalida virtual"};
     private final Emisor emisor = new Emisor();
     private final Mensajero mensajero = new Mensajero();
-
+     private static Monitor monitor;
     /**
      * Creates new form frmMain
      */
@@ -47,31 +50,80 @@ public class frmMain extends javax.swing.JFrame {
         txtBuzon.setEnabled(false);
         for (int i=0; i<N; i++)
             buzon[i] = "";
+        monitor = new Monitor();
     }
-    
+    public class Monitor {
+    public synchronized void acceder(int posicion,String mensaje){
+        buzon[posicion]= mensaje;
+    }
+    }
+   
     public class Emisor extends Thread {
-        
         public String mensaje = "";
-        
-        // Debe buscar un mensaje aleatorio (0-19)
-        // Si hay espacio en el buzón, debe colocar el mensaje en el text area
-        // Ojo que el text area debe indicar el orden de prioridad en base a las líneas
-        // El orden de ingreso es FIFO
-        //int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+        int cont=0;
+        private boolean run = false;
+        public void startRunning(){
+           run = true;
+        }
+        public void stopRunning(){
+            run = false;
+        }
+        @Override
+        public void run(){
+            while(run && cont<5){
+                        
+                        int random = (int) (Math.random() * (19+0));
+                        mensaje = mensajes[random];
+                        // Si hay espacio en el buzón, debe colocar el mensaje en el text area  
+                        monitor.acceder(cont, mensaje);
+                        // Ojo que el text area debe indicar el orden de prioridad en base a las líneas
+                        // El orden de ingreso es FIFO
+                        actualizarBuzon();
+                        cont++;
+                    try {
+                        int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+                        Thread.sleep(velocidad);
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+        }
+       
     }
     
     public class Mensajero extends Thread {
-        
+        int cont=0;
         public String mensajeAEnviar = "";
-        
-        // Debe buscar el mensaje con la prioridad más alta
-        // Envía el mensaje del buzón y lo debe mostrar en consola
-        // Ojo que el text area debe indicar que línea de mensaje ya fue entregado
-        // La línea que acaba de enviar debe mostrar al final un mensaje tipo: "Mensaje envíado"
-        //int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+        private boolean run = false;
+        public void startRunning(){
+           run = true;
+        }
+        public void stopRunning(){
+            run = false;
+        }
+        @Override
+        public void run(){
+            while(run&& cont<5){
+                // Envía el mensaje del buzón y lo debe mostrar en consola
+                System.out.println("Mensaje enviado: "+ buzon[cont]);
+                mensajeAEnviar= buzon[cont]+ "Enviado";
+                monitor.acceder(cont, mensajeAEnviar);
+                actualizarBuzon();
+                // Debe buscar el mensaje con la prioridad más alta
+                cont++;
+                // Ojo que el text area debe indicar que línea de mensaje ya fue entregado
+                // La línea que acaba de enviar debe mostrar al final un mensaje tipo: "Mensaje envíado"
+                }try {
+                        int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+                        Thread.sleep(velocidad);
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+        }
     }
     
     public void actualizarBuzon() {
+        txtBuzon.setText("");
         txtBuzon.setText(buzon[0] + "\n" + buzon[1] + "\n" + buzon[2] + "\n" + buzon[3] + "\n" + buzon[4]);
     }
 
@@ -290,7 +342,9 @@ public class frmMain extends javax.swing.JFrame {
         btnMenosMensajeros.setEnabled(false);
         btnMasMensajeros.setEnabled(false);
         btnIniciar.setEnabled(false);
+        emisor.startRunning();
         emisor.start();
+        mensajero.startRunning();
         mensajero.start();
     }//GEN-LAST:event_btnIniciarActionPerformed
 
