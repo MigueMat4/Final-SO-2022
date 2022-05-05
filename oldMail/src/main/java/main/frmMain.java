@@ -69,6 +69,7 @@ public class frmMain extends javax.swing.JFrame {
             }
             mensaje=mensajes[(int)(Math.random()*19-0)+0]+": Enviando";
             buzon[lugar]=mensaje;
+            txtBuzon.setText(txtBuzon.getText()+buzon[lugar]+"\n");
             System.out.println(mensaje);
         }
         
