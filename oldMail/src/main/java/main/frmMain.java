@@ -4,6 +4,9 @@
  */
 package main;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  *
  * @author mfmatul
@@ -36,6 +39,11 @@ public class frmMain extends javax.swing.JFrame {
         "Todos saben que la mayoría de estudiantes copia en la modalida virtual"};
     private final Emisor emisor = new Emisor();
     private final Mensajero mensajero = new Mensajero();
+    private Monitor monitor = new Monitor();
+    //Variables adicionales
+    public int cantMensajes = 0;
+    public int cantEnviados = 0;
+    public int mensajesRestantes = 0;
 
     /**
      * Creates new form frmMain
@@ -45,14 +53,51 @@ public class frmMain extends javax.swing.JFrame {
         btnMenosEmisores.setEnabled(false);
         btnMenosMensajeros.setEnabled(false);
         txtBuzon.setEnabled(false);
-        for (int i=0; i<N; i++)
+        for (int i=0; i<N; i++){
             buzon[i] = "";
+        }
+    }
+    
+    public class Monitor {
+
+        public synchronized void administrarBuzon(int numMensaje) {
+            if (numMensaje == 20) {
+                buzon[cantEnviados] = buzon[cantEnviados] + " - Mensaje Enviado";
+                System.out.println("Mensaje enviado: " + buzon[cantEnviados]);
+                cantEnviados++;
+                mensajesRestantes--;
+            } else {
+                buzon[cantMensajes] =(cantMensajes +1) + ".- " + mensajes[numMensaje];
+                System.out.println("Mensaje generado: " + buzon[cantMensajes]);
+                cantMensajes++;
+                mensajesRestantes++;
+            }
+            actualizarBuzon();
+
+        }
     }
     
     public class Emisor extends Thread {
+        //El emisor es el que funciona como un productor
         
         public String mensaje = "";
-        
+        public void run(){
+            System.out.println("Inicio del emisor");
+            while(true){
+                while(cantMensajes  < 5){
+                try {
+                    int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+                    Thread.sleep(velocidad);
+                    int nMensaje = generarMensajeAleatorio();
+                    monitor.administrarBuzon(nMensaje);
+                    
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+
+                }
+            }
+        }
         // Debe buscar un mensaje aleatorio (0-19)
         // Si hay espacio en el buzón, debe colocar el mensaje en el text area
         // Ojo que el text area debe indicar el orden de prioridad en base a las líneas
@@ -62,7 +107,30 @@ public class frmMain extends javax.swing.JFrame {
     
     public class Mensajero extends Thread {
         
-        public String mensajeAEnviar = "";
+        //public String mensajeAEnviar = "";
+    
+        @Override
+        public void run(){
+            System.out.println("Inicio del mensajero");
+            while(true){
+                while(cantEnviados < 5){
+                try {
+                    int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+                    Thread.sleep(velocidad);
+                    //Le envió un numero que no esta dentro del rango de los mensajes
+                    //para que active el mandar mensajes
+                    if(mensajesRestantes > 0){
+                        monitor.administrarBuzon(20); 
+                    }
+                  
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                }
+            }
+            
+        }
+       
         
         // Debe buscar el mensaje con la prioridad más alta
         // Envía el mensaje del buzón y lo debe mostrar en consola
@@ -73,6 +141,10 @@ public class frmMain extends javax.swing.JFrame {
     
     public void actualizarBuzon() {
         txtBuzon.setText(buzon[0] + "\n" + buzon[1] + "\n" + buzon[2] + "\n" + buzon[3] + "\n" + buzon[4]);
+    }
+    
+    public int generarMensajeAleatorio(){
+        return (int) (Math.random() * 19 + 0);
     }
 
     /**
@@ -285,6 +357,7 @@ public class frmMain extends javax.swing.JFrame {
     }//GEN-LAST:event_btnMasMensajerosActionPerformed
 
     private void btnIniciarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnIniciarActionPerformed
+        System.out.println("Inicio el programa");
         btnMenosEmisores.setEnabled(false);
         btnMasEmisores.setEnabled(false);
         btnMenosMensajeros.setEnabled(false);
