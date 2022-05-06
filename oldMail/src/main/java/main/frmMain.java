@@ -4,19 +4,22 @@
  */
 package main;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  *
- * @author mfmatul
+ * @author Diego G
  */
 public class frmMain extends javax.swing.JFrame {
-    
+
     static final int N = 5; // Tamaño del buzón
     String buzon[] = new String[N]; // Buzón para mensajes
     private int contadorEmisores = 1;
     private int contadorMensajeros = 1;
-    String[] mensajes = {"El Real Madrid es el mejor equipo del mundo", 
-        "DC es mejor que Marvel", 
-        "Sistemas Operativos fue el curso favorito de los estudiantes", 
+    String[] Mensajes = {"El Real Madrid es el mejor equipo del mundo",
+        "DC es mejor que Marvel",
+        "Sistemas Operativos fue el curso favorito de los estudiantes",
         "Ella no te ama :'c",
         "La pizza con piña sí es buena",
         "La paciencia es una virtud",
@@ -36,6 +39,7 @@ public class frmMain extends javax.swing.JFrame {
         "Todos saben que la mayoría de estudiantes copia en la modalida virtual"};
     private final Emisor emisor = new Emisor();
     private final Mensajero mensajero = new Mensajero();
+    private final monitor Monitor = new monitor();
 
     /**
      * Creates new form frmMain
@@ -45,32 +49,158 @@ public class frmMain extends javax.swing.JFrame {
         btnMenosEmisores.setEnabled(false);
         btnMenosMensajeros.setEnabled(false);
         txtBuzon.setEnabled(false);
-        for (int i=0; i<N; i++)
+        for (int i = 0; i < N; i++) {
             buzon[i] = "";
+        }
     }
-    
+
     public class Emisor extends Thread {
-        
+
         public String mensaje = "";
-        
+
         // Debe buscar un mensaje aleatorio (0-19)
         // Si hay espacio en el buzón, debe colocar el mensaje en el text area
         // Ojo que el text area debe indicar el orden de prioridad en base a las líneas
         // El orden de ingreso es FIFO
         //int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+        @Override
+        public void run() {
+            //ciclo infinito para que no termine el hilo 
+            while (true) {
+                try {
+                    // obtener mensaje
+                    this.mensaje = Mensajes[(int) (Math.random() * (19 - 0 + 1) + 0)];
+                    // mandar a llamar el metodo del monitor
+                    Monitor.emisor(mensaje);
+                    //velocidad
+                    int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+                    sleep(velocidad);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
     }
-    
+
     public class Mensajero extends Thread {
-        
+
         public String mensajeAEnviar = "";
-        
+
         // Debe buscar el mensaje con la prioridad más alta
         // Envía el mensaje del buzón y lo debe mostrar en consola
         // Ojo que el text area debe indicar que línea de mensaje ya fue entregado
         // La línea que acaba de enviar debe mostrar al final un mensaje tipo: "Mensaje envíado"
         //int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+        @Override
+        public void run() {
+            while (true) {
+
+                try {
+
+                    this.mensajeAEnviar = Monitor.mensajero();
+
+                    System.out.println("Mensaje enviado: " + this.mensajeAEnviar);
+
+                    int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+
+                    sleep(velocidad);
+
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+
+            }
+        }
     }
-    
+
+    public class monitor {
+
+        private int siguente;
+        private int prioridad;
+        private boolean buzonVacio;
+        private boolean buzonLleno;
+
+        public monitor() {
+            this.siguente = 0;
+            this.prioridad = 0;
+            // el buzon empieza vacio
+            this.buzonVacio = true;
+            this.buzonLleno = false;
+        }
+
+        public synchronized String mensajero() {
+            //variable axiliar
+            String mensaje = "";
+            // si el buzon esta vacia tiene que esperar
+            while (this.buzonVacio) {
+                try {
+                    wait();
+
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }// termina la espera 
+
+            // sacer le mensaje con mayor prioridad
+            this.siguente--;
+            // con que se saque un mensaje el buzon deja de estar lleno
+            this.buzonLleno = false;
+            /* el mensaje con prioridad mas alta seria el 0 pero si este ya esta enviado se pasa al 1 y asi continua hasta
+            verificar todos los menajes
+            */
+            for (int i = 0; i < buzon.length; i++) {
+                if (!buzon[i].contains("-Enviado")) {
+                    mensaje = buzon[i];
+                    buzon[i] = buzon[i] + "-Enviado";
+                    break;
+                }
+            }
+
+            if (siguente == 0) {
+                // el buzon se encuentra vacio
+                this.buzonVacio = true;
+            }
+
+            //despertar los demas hilos
+            notifyAll();
+            //mostrar los elementos
+            actualizarBuzon();
+
+            return mensaje;
+            //buzon[siguiente];
+        }
+
+        public synchronized void emisor(String mensaje) {
+            // si el buzon esta lleno tiene que esperar
+            while (this.buzonLleno) {
+                try {
+                    wait();
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }// termina la espera
+
+            // como se van insertando se agrega la prioridad
+            buzon[this.siguente] = String.valueOf(this.siguente) + ". " + mensaje;
+
+            siguente++;
+            // si ya hay un mensaje el buzon deja destar vacio 
+
+            this.buzonVacio = false;
+
+            if (this.siguente == 5) {
+                // el buzon se lleno
+                this.buzonLleno = true;
+            }
+            // mostar el elemento insertado
+            actualizarBuzon();
+            lblAcceso.setText(String.valueOf(siguente));
+            //despertar los demas hilos
+            notifyAll();
+
+        }
+    }
+
     public void actualizarBuzon() {
         txtBuzon.setText(buzon[0] + "\n" + buzon[1] + "\n" + buzon[2] + "\n" + buzon[3] + "\n" + buzon[4]);
     }
@@ -251,8 +381,9 @@ public class frmMain extends javax.swing.JFrame {
     private void btnMasEmisoresActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMasEmisoresActionPerformed
         contadorEmisores++;
         lblEmisores.setText(String.valueOf(contadorEmisores));
-        if (contadorEmisores == 2)
+        if (contadorEmisores == 2) {
             btnMenosEmisores.setEnabled(true);
+        }
         if (contadorEmisores == 5)
             btnMasEmisores.setEnabled(false);
     }//GEN-LAST:event_btnMasEmisoresActionPerformed
@@ -260,8 +391,9 @@ public class frmMain extends javax.swing.JFrame {
     private void btnMenosEmisoresActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMenosEmisoresActionPerformed
         contadorEmisores--;
         lblEmisores.setText(String.valueOf(contadorEmisores));
-        if (contadorEmisores == 4)
+        if (contadorEmisores == 4) {
             btnMasEmisores.setEnabled(true);
+        }
         if (contadorEmisores == 1)
             btnMenosEmisores.setEnabled(false);
     }//GEN-LAST:event_btnMenosEmisoresActionPerformed
@@ -269,8 +401,9 @@ public class frmMain extends javax.swing.JFrame {
     private void btnMenosMensajerosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMenosMensajerosActionPerformed
         contadorMensajeros--;
         lblMensajeros.setText(String.valueOf(contadorMensajeros));
-        if (contadorMensajeros == 4)
+        if (contadorMensajeros == 4) {
             btnMasMensajeros.setEnabled(true);
+        }
         if (contadorMensajeros == 1)
             btnMenosMensajeros.setEnabled(false);
     }//GEN-LAST:event_btnMenosMensajerosActionPerformed
@@ -278,8 +411,9 @@ public class frmMain extends javax.swing.JFrame {
     private void btnMasMensajerosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMasMensajerosActionPerformed
         contadorMensajeros++;
         lblMensajeros.setText(String.valueOf(contadorMensajeros));
-        if (contadorMensajeros == 2)
+        if (contadorMensajeros == 2) {
             btnMenosMensajeros.setEnabled(true);
+        }
         if (contadorMensajeros == 5)
             btnMasMensajeros.setEnabled(false);
     }//GEN-LAST:event_btnMasMensajerosActionPerformed
