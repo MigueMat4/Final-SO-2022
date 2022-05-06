@@ -4,19 +4,26 @@
  */
 package main;
 
+import java.util.concurrent.Semaphore;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  *
  * @author mfmatul
  */
 public class frmMain extends javax.swing.JFrame {
-    
+
     static final int N = 5; // Tamaño del buzón
     String buzon[] = new String[N]; // Buzón para mensajes
+    private static int ingresados = 0; // Cuenta la cantidad de mensajes ingresados
+    private static int libres = 5;     // Cuenta la cantidad de espacios libres en el Buzón
+    private static Semaphore mutex = new Semaphore(1, true); // Controla el acceso a la región crítica
     private int contadorEmisores = 1;
     private int contadorMensajeros = 1;
-    String[] mensajes = {"El Real Madrid es el mejor equipo del mundo", 
-        "DC es mejor que Marvel", 
-        "Sistemas Operativos fue el curso favorito de los estudiantes", 
+    String[] mensajes = {"El Real Madrid es el mejor equipo del mundo",
+        "DC es mejor que Marvel",
+        "Sistemas Operativos fue el curso favorito de los estudiantes",
         "Ella no te ama :'c",
         "La pizza con piña sí es buena",
         "La paciencia es una virtud",
@@ -45,32 +52,105 @@ public class frmMain extends javax.swing.JFrame {
         btnMenosEmisores.setEnabled(false);
         btnMenosMensajeros.setEnabled(false);
         txtBuzon.setEnabled(false);
-        for (int i=0; i<N; i++)
+        for (int i = 0; i < N; i++) {
             buzon[i] = "";
+        }
     }
-    
+
     public class Emisor extends Thread {
-        
-        public String mensaje = "";
-        
-        // Debe buscar un mensaje aleatorio (0-19)
-        // Si hay espacio en el buzón, debe colocar el mensaje en el text area
-        // Ojo que el text area debe indicar el orden de prioridad en base a las líneas
-        // El orden de ingreso es FIFO
-        //int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+
+        private String mensaje = "";
+        private int posicion = 0;
+        private int velocidad;
+
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    //int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;   
+                    Thread.sleep(velocidad * 1000);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+
+                // Debe buscar un mensaje aleatorio (0-19)
+                int random = (int) (Math.random() * mensajes.length);
+                mensaje = (posicion + 1) + " - " + mensajes[random];
+
+                while (libres < 1) {
+                    jLabel2.setText(jLabel2.getText());
+                }
+                libres--;
+
+                try {
+                    mutex.acquire(); // Entra a la región crítica
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                //Ingreso en el buzón
+                // El orden de ingreso es FIFO
+                buzon[posicion] = mensaje;
+                posicion++;
+                actualizarBuzon();
+                lblAcceso.setText(String.valueOf(ingresados + 1));//Mostrar cantidad de mensajes en el buzon
+                ingresados++;
+                mutex.release(); // Sale de la región crítica
+            }
+        }
+
+        public void AsignarVelocidad(int veloz) {
+            this.velocidad = veloz;
+        }
+
     }
-    
+
     public class Mensajero extends Thread {
-        
-        public String mensajeAEnviar = "";
-        
-        // Debe buscar el mensaje con la prioridad más alta
-        // Envía el mensaje del buzón y lo debe mostrar en consola
-        // Ojo que el text area debe indicar que línea de mensaje ya fue entregado
-        // La línea que acaba de enviar debe mostrar al final un mensaje tipo: "Mensaje envíado"
-        //int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+
+        private String mensajeAEnviar = "";
+        private int posicion = 0;
+        private int velocidad;
+
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    //int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+                    Thread.sleep(velocidad * 1000);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+
+                while (ingresados < 1) {
+                    jLabel2.setText(jLabel2.getText());
+                }
+
+                try {
+                    mutex.acquire(); // Entra a la región crítica
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+
+                // Debe buscar el mensaje con la prioridad más alta
+                mensajeAEnviar = buzon[posicion];
+
+                // Envía el mensaje del buzón y lo debe mostrar en consola
+                System.out.println("Enviado: " + mensajeAEnviar);
+
+                buzon[posicion] = mensajeAEnviar + " - Enviado"; //Se registra en el text area la validacion de que ha sido enviado el mensaje
+                posicion++;
+                actualizarBuzon();
+                lblAcceso.setText(String.valueOf(ingresados - 1));//Mostrar cantidad de mensajes en el buzon
+                ingresados--;
+                mutex.release(); // Sale de la región crítica
+            }
+        }
+
+        public void AsignarVelocidad(int veloz) {
+            this.velocidad = veloz;
+        }
+
     }
-    
+
     public void actualizarBuzon() {
         txtBuzon.setText(buzon[0] + "\n" + buzon[1] + "\n" + buzon[2] + "\n" + buzon[3] + "\n" + buzon[4]);
     }
@@ -251,8 +331,9 @@ public class frmMain extends javax.swing.JFrame {
     private void btnMasEmisoresActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMasEmisoresActionPerformed
         contadorEmisores++;
         lblEmisores.setText(String.valueOf(contadorEmisores));
-        if (contadorEmisores == 2)
+        if (contadorEmisores == 2) {
             btnMenosEmisores.setEnabled(true);
+        }
         if (contadorEmisores == 5)
             btnMasEmisores.setEnabled(false);
     }//GEN-LAST:event_btnMasEmisoresActionPerformed
@@ -260,8 +341,9 @@ public class frmMain extends javax.swing.JFrame {
     private void btnMenosEmisoresActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMenosEmisoresActionPerformed
         contadorEmisores--;
         lblEmisores.setText(String.valueOf(contadorEmisores));
-        if (contadorEmisores == 4)
+        if (contadorEmisores == 4) {
             btnMasEmisores.setEnabled(true);
+        }
         if (contadorEmisores == 1)
             btnMenosEmisores.setEnabled(false);
     }//GEN-LAST:event_btnMenosEmisoresActionPerformed
@@ -269,8 +351,9 @@ public class frmMain extends javax.swing.JFrame {
     private void btnMenosMensajerosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMenosMensajerosActionPerformed
         contadorMensajeros--;
         lblMensajeros.setText(String.valueOf(contadorMensajeros));
-        if (contadorMensajeros == 4)
+        if (contadorMensajeros == 4) {
             btnMasMensajeros.setEnabled(true);
+        }
         if (contadorMensajeros == 1)
             btnMenosMensajeros.setEnabled(false);
     }//GEN-LAST:event_btnMenosMensajerosActionPerformed
@@ -278,8 +361,9 @@ public class frmMain extends javax.swing.JFrame {
     private void btnMasMensajerosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMasMensajerosActionPerformed
         contadorMensajeros++;
         lblMensajeros.setText(String.valueOf(contadorMensajeros));
-        if (contadorMensajeros == 2)
+        if (contadorMensajeros == 2) {
             btnMenosMensajeros.setEnabled(true);
+        }
         if (contadorMensajeros == 5)
             btnMasMensajeros.setEnabled(false);
     }//GEN-LAST:event_btnMasMensajerosActionPerformed
@@ -290,6 +374,8 @@ public class frmMain extends javax.swing.JFrame {
         btnMenosMensajeros.setEnabled(false);
         btnMasMensajeros.setEnabled(false);
         btnIniciar.setEnabled(false);
+        emisor.AsignarVelocidad(Integer.parseInt(lblEmisores.getText()));
+        mensajero.AsignarVelocidad(Integer.parseInt(lblMensajeros.getText()));
         emisor.start();
         mensajero.start();
     }//GEN-LAST:event_btnIniciarActionPerformed
