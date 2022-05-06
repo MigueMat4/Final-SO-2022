@@ -4,6 +4,9 @@
  */
 package main;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  *
  * @author mfmatul
@@ -36,6 +39,7 @@ public class frmMain extends javax.swing.JFrame {
         "Todos saben que la mayoría de estudiantes copia en la modalida virtual"};
     private final Emisor emisor = new Emisor();
     private final Mensajero mensajero = new Mensajero();
+    OverMonitor monitor = new OverMonitor();
 
     /**
      * Creates new form frmMain
@@ -53,26 +57,89 @@ public class frmMain extends javax.swing.JFrame {
         
         public String mensaje = "";
         
-        // Debe buscar un mensaje aleatorio (0-19)
-        // Si hay espacio en el buzón, debe colocar el mensaje en el text area
-        // Ojo que el text area debe indicar el orden de prioridad en base a las líneas
-        // El orden de ingreso es FIFO
-        //int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+        @Override
+        public void run(){
+            int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+            while (true) {
+                try {
+                    Thread.sleep(velocidad);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                mensaje = "";
+                int numMensaje = (int)(Math.random() * 19) + 0; // Debe buscar un mensaje aleatorio (0-19)
+                monitor.enviar(mensaje, numMensaje);
+            }
+        }
     }
     
     public class Mensajero extends Thread {
         
         public String mensajeAEnviar = "";
         
-        // Debe buscar el mensaje con la prioridad más alta
-        // Envía el mensaje del buzón y lo debe mostrar en consola
-        // Ojo que el text area debe indicar que línea de mensaje ya fue entregado
-        // La línea que acaba de enviar debe mostrar al final un mensaje tipo: "Mensaje envíado"
-        //int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+        @Override
+        public void run(){
+            int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+            // Debe buscar el mensaje con la prioridad más alta
+            // Libera del buzón el mensaje y lo debe mostrar en consola
+            // Ojo que el text area debe indicar que línea de mensaje ya fue entregado
+            // La línea que acaba de enviar debe mostrar un mensaje tipo: "Mensaje envíado"
+            // Mostrar el mensaje en consola como entregado
+            while (true) {
+                try {
+                    Thread.sleep(velocidad);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                mensajeAEnviar = monitor.entregar();
+                System.out.println("Enviado: " + mensajeAEnviar); // Envía el mensaje del buzón y lo debe mostrar en consola
+            }
+        }
     }
     
-    public void actualizarBuzon() {
-        txtBuzon.setText(buzon[0] + "\n" + buzon[1] + "\n" + buzon[2] + "\n" + buzon[3] + "\n" + buzon[4]);
+    class OverMonitor{ // monitor como solución
+        private int mensajesIngresados = 0;
+        private int mensajesEntregados = 0;
+        
+        /**
+         * synchronized = Una vez un hilo ha empezado a ejecutar ese método, 
+         * no se permitirá que ningún otro hilo empiece a ejecutar ningún otro 
+         * método synchronized de ese objeto
+         */
+        public synchronized void enviar(String msj, int numMensaje){
+            // Si hay espacio en el buzón, debe colocar el mensaje en el text area
+            if (mensajesIngresados == N)
+                ir_a_estado_inactivo(); // si el buzón está lleno, emisor pasa al estado inactivo
+            // Debe colocar el mensaje en el text area en el orden correcto
+            msj = String.valueOf(mensajesIngresados + 1) + " - " + mensajes[numMensaje]; // Ojo que el text area debe indicar el orden de prioridad en base a las líneas
+            buzon[mensajesIngresados] = msj;
+            actualizarBuzon();
+            mensajesIngresados++; // El orden de ingreso es FIFO
+            notify(); // si el mensajero estaba inactivo, lo despierta [signal]
+        }
+        
+        public synchronized String entregar(){
+            String msj;
+            if (mensajesIngresados == 0 || mensajesEntregados >= mensajesIngresados)
+                ir_a_estado_inactivo(); // si el buzón está vacío, mensajero pasa al estado inactivo
+            // Debe buscar el mensaje con la prioridad más alta
+            msj = buzon[mensajesEntregados]; // obtiene un mensaje del buzón
+            buzon[mensajesEntregados] += " - Enviado"; // La línea que acaba de enviar debe mostrar al final un mensaje tipo: "Mensaje envíado"
+            actualizarBuzon();
+            mensajesEntregados++;
+            return msj;
+        }
+        
+        public void actualizarBuzon() {
+            txtBuzon.setText(buzon[0] + "\n" + buzon[1] + "\n" + buzon[2] + "\n" + buzon[3] + "\n" + buzon[4]);
+        }
+        
+        private void ir_a_estado_inactivo(){
+            try{
+                wait(); // Duerme al proceso en turno
+            }
+            catch(InterruptedException exc){};
+        }
     }
 
     /**
