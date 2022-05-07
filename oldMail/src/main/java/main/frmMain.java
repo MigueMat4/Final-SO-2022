@@ -4,6 +4,11 @@
  */
 package main;
 
+import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JOptionPane;
+
 /**
  *
  * @author mfmatul
@@ -36,7 +41,9 @@ public class frmMain extends javax.swing.JFrame {
         "Todos saben que la mayoría de estudiantes copia en la modalida virtual"};
     private final Emisor emisor = new Emisor();
     private final Mensajero mensajero = new Mensajero();
-
+    ArrayList<String> buzonMensaje = new ArrayList();
+    Monitor monitor = new Monitor();
+    int contadorAux = 0;
     /**
      * Creates new form frmMain
      */
@@ -50,25 +57,84 @@ public class frmMain extends javax.swing.JFrame {
     }
     
     public class Emisor extends Thread {
-        
         public String mensaje = "";
+        @Override
+        public void run(){
+            while(true){
+                while(buzonMensaje.size()<5){
+                    try {
+                        Thread.sleep((Integer.parseInt(lblEmisores.getText())) * 1000);
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    try {
+                        monitor.enviarMensaje();
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }
+        }
         
         // Debe buscar un mensaje aleatorio (0-19)
         // Si hay espacio en el buzón, debe colocar el mensaje en el text area
         // Ojo que el text area debe indicar el orden de prioridad en base a las líneas
         // El orden de ingreso es FIFO
-        //int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
     }
     
     public class Mensajero extends Thread {
-        
         public String mensajeAEnviar = "";
-        
+        public void run(){
+            jLabel1.setText(jLabel1.getText());
+            while (true) {
+                jLabel1.setText(jLabel1.getText());
+                while(!buzonMensaje.isEmpty()){
+                    try {
+                        Thread.sleep((Integer.parseInt(lblMensajeros.getText())) * 1000);
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    try {
+                        monitor.recibirMensaje();
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(frmMain.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }
+        }
         // Debe buscar el mensaje con la prioridad más alta
         // Envía el mensaje del buzón y lo debe mostrar en consola
         // Ojo que el text area debe indicar que línea de mensaje ya fue entregado
         // La línea que acaba de enviar debe mostrar al final un mensaje tipo: "Mensaje envíado"
         //int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+    }
+    public class Monitor{
+        public synchronized void enviarMensaje() throws InterruptedException{
+            while (buzonMensaje.size()==5) {
+                wait();
+            }
+            int numero = (int) (Math.random()*(19-0)) + 0;
+            emisor.mensaje=mensajes[numero];
+            txtBuzon.append(emisor.mensaje+"\n");
+            buzonMensaje.add(emisor.mensaje);
+            notify();
+        }
+        public synchronized void recibirMensaje() throws InterruptedException{
+            while(buzonMensaje.isEmpty()){
+                wait();
+            }
+            if(contadorAux!=buzonMensaje.size()){
+                mensajero.mensajeAEnviar=buzonMensaje.get(contadorAux);
+                buzonMensaje.set(contadorAux, mensajero.mensajeAEnviar + "  -  Enviado");
+                System.out.println("Mensaje Enviado: " + mensajero.mensajeAEnviar);
+                txtBuzon.setText("");
+                for (int i = 0; i < buzonMensaje.size(); i++) {
+                    txtBuzon.append(buzonMensaje.get(i)+"\n");
+                }
+                contadorAux++;
+            }
+            notify();
+        }
     }
     
     public void actualizarBuzon() {
