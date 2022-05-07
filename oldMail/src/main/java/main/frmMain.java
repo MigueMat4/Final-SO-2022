@@ -52,23 +52,65 @@ public class frmMain extends javax.swing.JFrame {
     public class Emisor extends Thread {
         
         public String mensaje = "";
+       
+         @Override
+         public void run(){
+             
+             int x = 0;
+             while (N == 0) {
+                 buzon[x] = mensaje;
+                 x++;
+                  mutex.squire
+                 if (contadorEmisores == N){
+                     emisor.sleep();
+                 };
+                 
+                 txtBuzon = (mensaje);
+                 contadorEmisores++
+          
+                if (contadorEmisores == 1{
+                    wakeup(mensajero); 
+                }:
+             };
+             mutex.Aquire
         
+             };
+         };
         // Debe buscar un mensaje aleatorio (0-19)
         // Si hay espacio en el buzón, debe colocar el mensaje en el text area
         // Ojo que el text area debe indicar el orden de prioridad en base a las líneas
         // El orden de ingreso es FIFO
-        //int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
+        int velocidad = Integer.parseInt(lblEmisores.getText()) * 1000;
     }
     
     public class Mensajero extends Thread {
         
         public String mensajeAEnviar = "";
         
+        @Override
+         
+         public void run(){
+             
+            int elemento;
+            while (TRUE) {
+            if (N == 0){
+                sleep();
+            };
+            mutex.squire
+            buzon[x] = ("mensaje" + " - enviado");
+            contadorMensajeros = contadorMensajeros +1; 
+            mutex.Aquire
+         
+         };
+          
+  
+       
+        
         // Debe buscar el mensaje con la prioridad más alta
         // Envía el mensaje del buzón y lo debe mostrar en consola
         // Ojo que el text area debe indicar que línea de mensaje ya fue entregado
         // La línea que acaba de enviar debe mostrar al final un mensaje tipo: "Mensaje envíado"
-        //int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
+        int velocidad = Integer.parseInt(lblMensajeros.getText()) * 1000;
     }
     
     public void actualizarBuzon() {
